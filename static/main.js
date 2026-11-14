@@ -33,14 +33,48 @@ pointLight.position.set(5, 3, 5);
 scene.add(pointLight);
 
 // Main Planet Sphere
-const geometry = new THREE.SphereGeometry(1, 64, 64);
+// Main Planet: grupa, do której trafia model Ziemi (lub kula dla Marsa/Księżyca)
 const textureLoader = new THREE.TextureLoader();
-
-let material = new THREE.MeshStandardMaterial({
-    map: textureLoader.load('./static/textures/earth.jpg')
-});
-const planet = new THREE.Mesh(geometry, material);
+const planet = new THREE.Group();
 scene.add(planet);
+
+// Kalibracja modelu (w stopniach) - dobierzcie eksperymentalnie
+const MODEL_ROTATION_Y = 0; // przesunięcie południka zerowego
+const MODEL_ROTATION_X = 0; // jeśli model ma oś Z jako "górę", ustawcie -90
+let earthModel = null;
+
+// Kula zapasowa dla Marsa i Księżyca (na razie bez tekstury)
+const fallbackSphere = new THREE.Mesh(
+    new THREE.SphereGeometry(1, 64, 64),
+    new THREE.MeshStandardMaterial()
+);
+fallbackSphere.visible = false;
+planet.add(fallbackSphere);
+
+new THREE.GLTFLoader().load(
+    './static/models/earth.glb',
+    (gltf) => {
+        const model = gltf.scene;
+
+        // wyśrodkowanie i przeskalowanie do promienia 1
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        model.position.sub(center);
+
+        const holder = new THREE.Group();
+        holder.add(model);
+        holder.scale.setScalar(2 / Math.max(size.x, size.y, size.z));
+        holder.rotation.x = THREE.MathUtils.degToRad(MODEL_ROTATION_X);
+        holder.rotation.y = THREE.MathUtils.degToRad(MODEL_ROTATION_Y);
+
+        planet.add(holder);
+        earthModel = holder;
+        earthModel.visible = (currentPlanet === 'earth');
+    },
+    undefined,
+    (err) => console.error('Nie udało się wczytać modelu:', err)
+);
 
 // --- LATITUDE & LONGITUDE GRID OVERLAY ---
 function createGridTexture() {
@@ -82,18 +116,25 @@ const gridMaterial = new THREE.MeshBasicMaterial({
     opacity: 0.8
 });
 const planetGrid = new THREE.Mesh(gridGeometry, gridMaterial);
-scene.add(planetGrid);
+planet.add(planetGrid);
 let currentPlanet = 'earth';
 // Function to switch planets
 function changePlanet(planetName) {
-    const newTexture = textureLoader.load(`./static/textures/${planetName}.jpg`);
-    planet.material.map = newTexture;
-    planet.material.needsUpdate = true;
-     // pokaż tylko markery z wybranej planety
+    currentPlanet = planetName; // wcześniej brakowało tej linii
+
+    if (earthModel) earthModel.visible = (planetName === 'earth');
+    fallbackSphere.visible = (planetName !== 'earth');
+
+    if (planetName !== 'earth') {
+        fallbackSphere.material.map = textureLoader.load(`./static/textures/${planetName}.jpg`);
+        fallbackSphere.material.needsUpdate = true;
+    }
+
     savedPoints.forEach(point => {
         point.mesh.visible = (point.planet === planetName);
     });
     renderSavedPoints();
+}
     
     const currentData = LOCATIONS[planetName] || [];
     console.log(`Loaded points for ${planetName}:`, currentData);
@@ -160,7 +201,10 @@ function createMarkerMesh(lat, lon) {
 }
 
 // Raycasting: Click on the planet to place a point
-const raycaster = new THREE.Raycaster();
+// zamiast: const intersects = raycaster.intersectObject(planet);
+const target = (currentPlanet === 'earth') ? earthModel : fallbackSphere;
+if (!target) return;
+const intersects = raycaster.intersectObject(target, true);
 const mouse = new THREE.Vector2();
 
 window.addEventListener('click', (event) => {
