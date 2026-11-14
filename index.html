@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="eng">
+<head>
+    <meta charset="UTF-8">
+    <title>TerraTrio</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    <div id="ui">
+        <button onclick="changePlanet('earth')">Earth</button>
+        <button onclick="changePlanet('mars')">Mars</button>
+        <button onclick="changePlanet('moon')">Moon</button>
+    </div>
+    <div id="ui">
+    <button onclick="changePlanet('earth')">Earth</button>
+    <button onclick="changePlanet('mars')">Mars</button>
+    <button onclick="changePlanet('moon')">Moon</button>
+    <button onclick="toggleRotation()" id="rotBtn">Pause Rotation</button>
+</div>
+    
+    <div id="canvas-container"></div>
+
+    <!-- Biblioteka Three.js i kontrola kamery (OrbitControls) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="static/main.js"></script>
+
+    <!-- Boczne menu kategorii -->
+<div id="sidebar">
+    <h2>Categories</h2>
+    <ul>
+        <li><a href="#" onclick="selectCategory('all')">Soil</a></li>
+        <li><a href="#" onclick="selectCategory('volcanoes')">Terrain</a></li>
+        <li><a href="#" onclick="selectCategory('bases')">Temperature</a></li>
+        <li><a href="#" onclick="selectCategory('missions')">Wind</a></li>
+    </ul>
+</div>
+    <!-- Right Sidebar for Saved Points -->
+<div id="right-sidebar">
+    <h2>Saved Points</h2>
+    <div id="point-form">
+        <input type="text" id="pointName" placeholder="Point Name">
+        <input type="number" id="pointLat" placeholder="Latitude (-90 to 90)" step="any">
+        <input type="number" id="pointLon" placeholder="Longitude (-180 to 180)" step="any">
+        <button onclick="addNewPoint()">Add Point</button>
+    </div>
+    <ul id="saved-points-list">
+        <!-- Saved points will appear here dynamically -->
+    </ul>
+</div>
+</body>
+</html>
